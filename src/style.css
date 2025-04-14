@@ -1,0 +1,101 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+
+* {
+    font-family: 'Inter', sans-serif;
+}
+
+body {
+    margin: 0;
+    overflow: hidden;
+    display: flex;
+    width: 100%;
+    height: 100vh;
+}
+
+#app {
+    flex: 1;
+}
+
+#app canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+#menu {
+    flex: 0 0 250px;
+    height: 100%;
+    background-color: rgb(20, 20, 20);
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+
+    padding: 1rem;
+}
+
+#menu h1 {
+    margin: 0;
+    font-size: 0.8em;
+    font-weight: 200;
+    color: rgba(255, 255, 255, 0.5);
+    letter-spacing: 0.1ch;
+}
+
+#menu hr {
+    border: 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+    margin-top: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.slider {
+    margin-bottom: 1rem;
+}
+
+input[type=range] {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 2px;
+    background: rgba(255, 255, 255, 0.4);
+    border-radius: 5px;
+    outline: none;
+    transition: background 0.3s;
+    position: relative;
+}
+
+input[type=range]::after {
+    content: '';
+    width: var(--after-width, 0%);
+    position: absolute;
+    height: 100%;
+    background: rgb(38, 168, 255);
+}
+
+input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    background: #cccccc;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background 0.3s ease-in-out;
+}
+
+input[type=range]::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    background: #cccccc;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+input[type=range]:hover::-webkit-slider-thumb {
+    background: #cccccc;
+}
+
+.slider .label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.5);
+}
