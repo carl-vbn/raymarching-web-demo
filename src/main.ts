@@ -76,7 +76,7 @@ const raymarchingPass = new ShaderPass({
   uniforms: {
     tDiffuse: { value: null },
     fTime: { value: fTime },
-    vResolution: { value: new THREE.Vector3(viewportWidth, window.innerHeight, 1) },
+    vResolution: { value: new THREE.Vector2(viewportWidth, window.innerHeight) },
     vaSpherePositions: { value: spheres.map(sphere => sphere.position) },
     vaSphereColors: { value: spheres.map(sphere => sphere.material.color) },
     vCameraPosition: { value: camera.position },
@@ -136,7 +136,8 @@ window.addEventListener('resize', () => {
 
   renderer.setSize(viewportWidth, window.innerHeight, false);
 
-  raymarchingPass.uniforms.vResolution.value.set(viewportWidth, window.innerHeight, 1);
+  raymarchingPass.uniforms.vResolution.value.set(viewportWidth, window.innerHeight);
+  console.log(raymarchingPass.uniforms.vResolution.value);
 });
 
 window.addEventListener('mousemove', (event) => {

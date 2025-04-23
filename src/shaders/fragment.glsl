@@ -88,9 +88,9 @@ vec3 rotateByQuaternion(vec3 v, vec4 q) {
     return v + 2.0 * cross(q.xyz, cross(q.xyz, v) + q.w * v);
 }
 
-vec4 mainImage(vec2 fragCoord)
+vec4 mainImage(vec2 fragUV)
 {
-    vec2 uv = (fragCoord/vResolution.xy-vec2(0.5))*vec2(vResolution.x/vResolution.y, 1.0);
+    vec2 uv = (fragUV-vec2(0.5))*vec2(vResolution.x/vResolution.y, 1.0);
 
     vec3 rayDir = normalize(vec3(uv, -1));
     rayDir = rotateByQuaternion(rayDir, vCameraRotation);
@@ -114,5 +114,5 @@ vec4 mainImage(vec2 fragCoord)
 
 void main() {
     vec4 originalColor = texture2D(tDiffuse, vUv);
-    gl_FragColor = originalColor + mainImage(vUv * vResolution.xy);
+    gl_FragColor = originalColor + mainImage(vUv);
 }
