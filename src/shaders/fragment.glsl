@@ -92,7 +92,7 @@ vec4 mainImage(vec2 fragUV)
 {
     vec2 uv = (fragUV-vec2(0.5))*vec2(vResolution.x/vResolution.y, 1.0);
 
-    vec3 rayDir = normalize(vec3(uv, -1));
+    vec3 rayDir = normalize(vec3(2.0 * uv, -1));
     rayDir = rotateByQuaternion(rayDir, vCameraRotation);
     vec3 p = vCameraPosition;
     vec3 col = vec3(0);

@@ -11,7 +11,7 @@ import { addSlider, injectUI } from './ui';
 const canvasContainer = document.getElementById('app')!;
 let viewportWidth = canvasContainer.getBoundingClientRect().width;
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(viewportWidth / 31, viewportWidth / window.innerHeight, 0.1, 1000);
+const camera = new THREE.PerspectiveCamera(90, viewportWidth / window.innerHeight, 0.1, 1000);
 const renderer = new THREE.WebGLRenderer();
 renderer.setSize(viewportWidth, window.innerHeight, false);
 canvasContainer.appendChild(renderer.domElement);
