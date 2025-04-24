@@ -83,6 +83,42 @@ export class Slider implements UIComponent {
     }
 }
 
+export class Button implements UIComponent {
+    label: string;
+    category?: string;
+    eventHandler?: () => void;
+
+    constructor(label: string) {
+        this.label = label;
+    }
+
+    build(): HTMLDivElement {
+        const buttonContainer = document.createElement('div');
+        buttonContainer.classList.add('button');
+
+        const button = document.createElement('button');
+        button.innerText = this.label;
+
+        this.eventHandler = () => {
+            console.log(`${this.label} clicked`);
+        };
+
+        button.addEventListener('click', this.eventHandler);
+
+        buttonContainer.appendChild(button);
+        return buttonContainer;
+    }
+
+    destroy(): void {
+        if (this.eventHandler) {
+            const button = document.querySelector(`.button > button`) as HTMLButtonElement;
+            if (button) {
+                button.removeEventListener('click', this.eventHandler);
+            }
+        }
+    }
+}
+
 function inverseLerp(a: number, b: number, v: number): number {
     return (v - a) / (b - a);
 }
@@ -105,6 +141,14 @@ export function addSlider(
     slider.addCallback(callback);
     uiComponents.push(slider);
     return slider;
+}
+
+export function addButton(label: string, callback: () => void, category?: string): Button {
+    const button = new Button(label);
+    button.category = category;
+    button.eventHandler = callback;
+    uiComponents.push(button);
+    return button;
 }
 
 function injectUIComponent(component: UIComponent, container: HTMLDivElement) {

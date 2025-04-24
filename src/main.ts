@@ -6,7 +6,7 @@ import vertexShader from './shaders/vertex.glsl?raw';
 import fragmentShader from './shaders/fragment.glsl?raw';
 import { EffectComposer, RenderPass, ShaderPass } from 'three/examples/jsm/Addons.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { addSlider, injectUI } from './ui';
+import { addButton, addSlider, injectUI } from './ui';
 
 const canvasContainer = document.getElementById('app')!;
 let viewportWidth = canvasContainer.getBoundingClientRect().width;
@@ -79,6 +79,7 @@ const raymarchingPass = new ShaderPass({
     vResolution: { value: new THREE.Vector2(viewportWidth, window.innerHeight) },
     vaSpherePositions: { value: spheres.map(sphere => sphere.position) },
     vaSphereColors: { value: spheres.map(sphere => sphere.material.color) },
+    faSphereRadii: { value: spheres.map(sphere => sphere.geometry.parameters.radius) },
     vCameraPosition: { value: camera.position },
     vCameraRotation: { value: camera.quaternion },
     vLightDirection: { value: getLightDirection() },
@@ -137,7 +138,6 @@ window.addEventListener('resize', () => {
   renderer.setSize(viewportWidth, window.innerHeight, false);
 
   raymarchingPass.uniforms.vResolution.value.set(viewportWidth, window.innerHeight);
-  console.log(raymarchingPass.uniforms.vResolution.value);
 });
 
 window.addEventListener('mousemove', (event) => {
@@ -224,6 +224,14 @@ addSlider('Light Elevation', { default: lightElevation, min: Math.PI / 2, max: -
   lightElevation = v;
   raymarchingPass.uniforms.vLightDirection.value = getLightDirection();
 }, '1#Scene');
+
+addButton('Add sphere', () => {
+  const newSphere = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ color: vaSphereColors[spheres.length % vaSphereColors.length], wireframe: true }));
+  newSphere.userData.index = spheres.length;
+  spheres.push(newSphere);
+  scene.add(newSphere);
+  console.log('Added sphere', newSphere.userData.index);
+}, "2#Spheres");
 
 injectUI();
 

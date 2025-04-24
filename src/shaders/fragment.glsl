@@ -1,16 +1,16 @@
+const int MAX_SPHERES = 3;
+
 uniform sampler2D tDiffuse;
 uniform float fTime;
 uniform vec2 vResolution;
-uniform vec3 vaSpherePositions[3];
-uniform vec3 vaSphereColors[3];
+uniform vec3 vaSpherePositions[MAX_SPHERES];
+uniform vec3 vaSphereColors[MAX_SPHERES];
+uniform float faSphereRadii[MAX_SPHERES];
 uniform vec3 vCameraPosition;
 uniform vec4 vCameraRotation;
 uniform vec3 vLightDirection;
 uniform float fBlendingFactor;
 varying vec2 vUv;
-
-const int MAX_SPHERES = 3;
-const float SPHERE_RADIUS = 1.0;
 
 float smin(float a, float b, float k) {
     float h = clamp(0.5 + 0.5*(a-b)/k, 0.0, 1.0);
@@ -19,12 +19,12 @@ float smin(float a, float b, float k) {
 
 float sceneSDF(vec3 p) {    
     float dists[MAX_SPHERES];
-    for (int i = 0; i<3; i++) {
-        dists[i] = length(p-vaSpherePositions[i])-SPHERE_RADIUS;
+    for (int i = 0; i<MAX_SPHERES; i++) {
+        dists[i] = length(p-vaSpherePositions[i])-faSphereRadii[i];
     }
 
     float d = dists[0];
-    for (int i = 1;  i<3; i++) {
+    for (int i = 1;  i<MAX_SPHERES; i++) {
         d = smin(d, dists[i], fBlendingFactor * 2.0);
     }
     return d;
@@ -42,20 +42,20 @@ vec3 getNormal(vec3 p)
 }
 
 float sphereSDF(vec3 p, int sphereIndex) {
-    return length(p-vaSpherePositions[sphereIndex]) - SPHERE_RADIUS;
+    return length(p-vaSpherePositions[sphereIndex]) - faSphereRadii[sphereIndex];
 }
 
 vec3 getCol(vec3 p) {
     float dists[MAX_SPHERES];
 
-    for (int i = 0; i<3; i++) {
+    for (int i = 0; i<MAX_SPHERES; i++) {
         dists[i] = max(0.0,sphereSDF(p, i));
     }
 
     int closestSphere = -1;
     float distanceToClosestSphere;
 
-    for (int i = 0; i<3; i++) {
+    for (int i = 0; i<MAX_SPHERES; i++) {
         if (closestSphere == -1 || dists[i] < distanceToClosestSphere) {
             closestSphere = i;
             distanceToClosestSphere = dists[i];
@@ -64,7 +64,7 @@ vec3 getCol(vec3 p) {
 
     float t[MAX_SPHERES];
     float multiplier = 2.0;
-    for (int i = 0; i<3; i++) {
+    for (int i = 0; i<MAX_SPHERES; i++) {
         float distSum = distanceToClosestSphere + dists[i];
 
         if (distSum < 0.01) {
@@ -77,7 +77,7 @@ vec3 getCol(vec3 p) {
     }
 
     vec3 col = vec3(0.0);
-    for (int i = 0; i<3; i++) {
+    for (int i = 0; i<MAX_SPHERES; i++) {
         col += vaSphereColors[i] * t[i] * multiplier;
     }
 
@@ -103,7 +103,8 @@ vec4 mainImage(vec2 fragUV)
         float d = sceneSDF(p);
         p = p+rayDir*d;
         if (d<0.0001) {
-            col = getCol(p) * (vec3(0.1)+max(0.0, dot(getNormal(p), -vLightDirection)));
+            float brightness = max(0.0, dot(getNormal(p), -vLightDirection)) + 0.1;
+            col = getCol(p) * brightness;
             break;
         }
         steps++;
