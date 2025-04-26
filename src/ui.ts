@@ -179,7 +179,7 @@ export function injectUI() {
         categories[catName].push(component);
     }
 
-    const sortedCategories = Object.keys(categories).sort((a, b) => a.localeCompare(b));
+    const sortedCategories = Object.keys(categories).sort((a, b) => parseInt(a) - parseInt(b));
     for (const catName of sortedCategories) {
         const displayName = catName.split('#')[1];
 

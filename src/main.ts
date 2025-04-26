@@ -35,7 +35,8 @@ function getLightDirection() {
 }
 
 const userParameters = [
-  { uniform: 'fBlendingFactor', display: 'Blending', default: 0.5, category: '1#Scene' }
+  { uniform: 'fBlendingFactor', display: 'Blending', default: 0.5, category: '1#Scene' },
+  { uniform: 'fShadowSharpness', display: 'Shadow Sharpness', default: 0.25, category: '1#Scene' },
 ];
 
 const vaSphereColors = [
@@ -216,14 +217,28 @@ for (const param of userParameters) {
   }, param.category);
 }
 
-addSlider('Light Azimuth', { default: lightAzimuth, max: 2 * Math.PI, displayMax: 360 }, (v) => {
+addSlider('Sun Azimuth', { default: lightAzimuth, max: 2 * Math.PI, displayMax: 360 }, (v) => {
   lightAzimuth = v;
   raymarchingPass.uniforms.vLightDirection.value = getLightDirection();
 }, '1#Scene');
-addSlider('Light Elevation', { default: lightElevation, min: Math.PI / 2, max: -Math.PI / 2, displayMin: -90, displayMax: 90 }, (v) => {
+addSlider('Sun Elevation', { default: lightElevation, min: Math.PI / 2, max: -Math.PI / 2, displayMin: -90, displayMax: 90 }, (v) => {
   lightElevation = v;
   raymarchingPass.uniforms.vLightDirection.value = getLightDirection();
 }, '1#Scene');
+
+for (let i = 0; i < spheres.length; i++) {
+  addSlider(`Sphere ${i+1} Radius`, { default: spheres[i].geometry.parameters.radius, min: 0.1, max: 5 }, (v) => {
+    spheres[i].geometry.dispose();
+    spheres[i].geometry = new THREE.SphereGeometry(v);
+    raymarchingPass.uniforms.faSphereRadii.value[i] = v;
+  }, `${i+2}#Sphere ${i+1}`);
+  addButton(`Remove sphere ${i+1}`, () => {
+    const sphere = spheres[i];
+    scene.remove(sphere);
+    spheres.splice(i, 1);
+    console.log('Removed sphere', i);
+  }, `${i+2}#Sphere ${i+1}`);
+}
 
 addButton('Add sphere', () => {
   const newSphere = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ color: vaSphereColors[spheres.length % vaSphereColors.length], wireframe: true }));
@@ -231,7 +246,7 @@ addButton('Add sphere', () => {
   spheres.push(newSphere);
   scene.add(newSphere);
   console.log('Added sphere', newSphere.userData.index);
-}, "2#Spheres");
+}, "10#Spheres");
 
 injectUI();
 
