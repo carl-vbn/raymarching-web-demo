@@ -6,7 +6,7 @@ import vertexShader from './shaders/vertex.glsl?raw';
 import fragmentShader from './shaders/fragment.glsl?raw';
 import { EffectComposer, RenderPass, ShaderPass } from 'three/examples/jsm/Addons.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { addButton, addSlider, injectUI } from './ui';
+import { addButton, addCheckbox, addSlider, injectUI } from './ui';
 
 const canvasContainer = document.getElementById('app')!;
 let viewportWidth = canvasContainer.getBoundingClientRect().width;
@@ -45,11 +45,15 @@ const vaSphereColors = [
   new THREE.Color(0x0000ff)
 ];
 
-const hoveredSphereColors = [
-  new THREE.Color(0xffAAAA),
-  new THREE.Color(0xAAffAA),
-  new THREE.Color(0xAAAAff)
-];
+const sphereControls = [];
+
+function getHoveredColor(index: number) {
+  const color = vaSphereColors[index].clone();
+  color.r = Math.min(color.r + 0.5, 1);
+  color.g = Math.min(color.g + 0.5, 1);
+  color.b = Math.min(color.b + 0.5, 1);
+  return color;
+}
 
 let fTime = 0;
 let paused = false;
@@ -71,6 +75,7 @@ spheres.forEach(sphere => sphere.visible = false);
 spheres.forEach((sphere, index) => sphere.userData.index = index);
 
 // Shader
+const MAX_SPHERES = 3;
 const composer = new EffectComposer(renderer);
 composer.addPass(new RenderPass(scene, camera));
 const raymarchingPass = new ShaderPass({
@@ -80,14 +85,15 @@ const raymarchingPass = new ShaderPass({
     vResolution: { value: new THREE.Vector2(viewportWidth, window.innerHeight) },
     vaSpherePositions: { value: spheres.map(sphere => sphere.position) },
     vaSphereColors: { value: spheres.map(sphere => sphere.material.color) },
-    faSphereRadii: { value: spheres.map(sphere => sphere.geometry.parameters.radius) },
+    faSphereRadii: { value: new Array(MAX_SPHERES).fill(1.0).map((_, i) => spheres[i]?.geometry.parameters.radius || 0) },
     vCameraPosition: { value: camera.position },
     vCameraRotation: { value: camera.quaternion },
     vLightDirection: { value: getLightDirection() },
     ...userParameters.reduce((acc: any, param) => {
       acc[param.uniform] = { value: param.default };
       return acc;
-    }, {})
+    }, {}),
+    bSky: { value: true },
   },
   vertexShader,
   fragmentShader,
@@ -149,7 +155,7 @@ window.addEventListener('mousemove', (event) => {
 
   const hoveredSphere = raycastSphere(event.clientX, event.clientY);
   if (hoveredSphere) {
-    (hoveredSphere.material as THREE.MeshBasicMaterial).color.set(hoveredSphereColors[hoveredSphere.userData.index]);
+    (hoveredSphere.material as THREE.MeshBasicMaterial).color.set(getHoveredColor(hoveredSphere.userData.index));
     hoveredSphere.userData.hovered = true;
 
     if (!isHoveringSphere) {
@@ -225,27 +231,40 @@ addSlider('Sun Elevation', { default: lightElevation, min: Math.PI / 2, max: -Ma
   lightElevation = v;
   raymarchingPass.uniforms.vLightDirection.value = getLightDirection();
 }, '1#Scene');
+addCheckbox('Draw Sky', true, (v: boolean) => {
+  raymarchingPass.uniforms.bSky.value = v;
+}, '1#Scene');
 
 for (let i = 0; i < spheres.length; i++) {
-  addSlider(`Sphere ${i+1} Radius`, { default: spheres[i].geometry.parameters.radius, min: 0.1, max: 5 }, (v) => {
-    spheres[i].geometry.dispose();
-    spheres[i].geometry = new THREE.SphereGeometry(v);
-    raymarchingPass.uniforms.faSphereRadii.value[i] = v;
-  }, `${i+2}#Sphere ${i+1}`);
-  addButton(`Remove sphere ${i+1}`, () => {
-    const sphere = spheres[i];
-    scene.remove(sphere);
-    spheres.splice(i, 1);
-    console.log('Removed sphere', i);
-  }, `${i+2}#Sphere ${i+1}`);
+  const controls = [
+    addSlider(`Sphere ${i+1} Radius`, { default: spheres[i].geometry.parameters.radius, min: 0, max: 5 }, (v) => {
+      spheres[i].geometry.dispose();
+      spheres[i].geometry = new THREE.SphereGeometry(v);
+      raymarchingPass.uniforms.faSphereRadii.value[i] = v;
+    }, `${i+2}#Sphere ${i+1}`),
+    addButton(`Remove sphere ${i+1}`, () => {
+      const sphere = spheres[i];
+      scene.remove(sphere);
+      spheres.splice(i, 1);
+      console.log('Removed sphere', i);
+    }, `${i+2}#Sphere ${i+1}`)
+  ];
+
+  sphereControls.push(controls);
 }
 
 addButton('Add sphere', () => {
-  const newSphere = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ color: vaSphereColors[spheres.length % vaSphereColors.length], wireframe: true }));
+  vaSphereColors.push(new THREE.Color(Math.random() * 0xffffff));
+  const newSphere = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ color: vaSphereColors[vaSphereColors.length - 1], wireframe: true }));
+  newSphere.visible = false;
   newSphere.userData.index = spheres.length;
-  spheres.push(newSphere);
   scene.add(newSphere);
-  console.log('Added sphere', newSphere.userData.index);
+  spheres.push(newSphere);
+
+  // Update uniforms
+  raymarchingPass.uniforms.vaSpherePositions.value = spheres.map(sphere => sphere.position);
+  raymarchingPass.uniforms.vaSphereColors.value = spheres.map(sphere => sphere.material.color);
+  raymarchingPass.uniforms.faSphereRadii.value = spheres.map(sphere => sphere.geometry.parameters.radius);
 }, "10#Spheres");
 
 injectUI();

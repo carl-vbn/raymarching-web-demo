@@ -1,6 +1,6 @@
 interface UIComponent {
     category?: string;
-    build(): HTMLDivElement;
+    build(): HTMLElement;
     destroy(): void;
 }
 
@@ -13,6 +13,7 @@ export class Slider implements UIComponent {
 
     inputElement?: HTMLInputElement;
     valueElement?: HTMLDivElement;
+    containerElement?: HTMLDivElement;
     eventHandler?: () => void;
 
     callbacks: ((v: number) => void)[] = [];
@@ -27,8 +28,8 @@ export class Slider implements UIComponent {
     }
 
     build(): HTMLDivElement {
-        const sliderContainer = document.createElement('div');
-        sliderContainer.classList.add('slider');
+        this.containerElement = document.createElement('div');
+        this.containerElement.classList.add('slider');
 
         const label = document.createElement('div');
         label.classList.add('label');
@@ -45,8 +46,8 @@ export class Slider implements UIComponent {
         input.value = String(this.value * 100);
         input.style.setProperty('--after-width', `calc(${this.value * 100}% - ${18 * this.value}px)`);
         label.appendChild(valueDisplay);
-        sliderContainer.appendChild(label);
-        sliderContainer.appendChild(input);
+        this.containerElement.appendChild(label);
+        this.containerElement.appendChild(input);
 
         this.eventHandler = () => {
             if (!this.inputElement || !this.valueElement) return;
@@ -65,13 +66,15 @@ export class Slider implements UIComponent {
         this.inputElement = input;
         this.valueElement = valueDisplay;
 
-        return sliderContainer;
+        return this.containerElement;
     }
 
     destroy(): void {
         if (this.inputElement && this.eventHandler) {
             this.inputElement.removeEventListener('input', this.eventHandler);
         }
+
+        this.containerElement?.remove();
     }
 
     addCallback(callback: (v: number) => void): void {
@@ -87,35 +90,92 @@ export class Button implements UIComponent {
     label: string;
     category?: string;
     eventHandler?: () => void;
+    callbacks: (() => void)[] = [];
+    element?: HTMLButtonElement;
 
     constructor(label: string) {
         this.label = label;
     }
 
-    build(): HTMLDivElement {
-        const buttonContainer = document.createElement('div');
-        buttonContainer.classList.add('button');
-
-        const button = document.createElement('button');
-        button.innerText = this.label;
+    build(): HTMLButtonElement {
+        this.element = document.createElement('button');
+        this.element.innerText = this.label;
 
         this.eventHandler = () => {
-            console.log(`${this.label} clicked`);
+            this.callbacks.forEach(callback => callback());
         };
 
-        button.addEventListener('click', this.eventHandler);
+        this.element.addEventListener('click', this.eventHandler);
 
-        buttonContainer.appendChild(button);
-        return buttonContainer;
+        return this.element;
     }
 
     destroy(): void {
-        if (this.eventHandler) {
-            const button = document.querySelector(`.button > button`) as HTMLButtonElement;
-            if (button) {
-                button.removeEventListener('click', this.eventHandler);
-            }
+        if (this.element && this.eventHandler) {
+            this.element.removeEventListener('click', this.eventHandler);
         }
+
+        this.element?.remove();
+    }
+
+    addCallback(callback: () => void): void {
+        this.callbacks.push(callback);
+    }
+}
+
+export class CheckBox implements UIComponent {
+    label: string;
+    value: boolean;
+    category?: string;
+    eventHandler?: () => void;
+
+    callbacks: ((v: boolean) => void)[] = [];
+
+    inputElement?: HTMLInputElement;
+    labelElement?: HTMLSpanElement;
+    containerElement?: HTMLDivElement;
+
+    constructor(label: string, value: boolean) {
+        this.label = label;
+        this.value = value;
+    }
+
+    build(): HTMLDivElement {
+        this.containerElement = document.createElement('div');
+        this.containerElement.classList.add('checkbox');
+
+        this.inputElement = document.createElement('input');
+        this.inputElement.type = 'checkbox';
+        this.inputElement.checked = this.value;
+        
+        this.eventHandler = () => {
+            if (!this.inputElement || !this.labelElement) return;
+
+            this.value = this.inputElement.checked;
+            this.callbacks.forEach(callback => callback(this.value));
+        }
+        this.inputElement.addEventListener('change', this.eventHandler);
+        this.containerElement.appendChild(this.inputElement);
+
+        this.labelElement = document.createElement('span');
+        this.labelElement.innerText = this.label;
+
+        this.containerElement.appendChild(this.inputElement);
+        this.containerElement.appendChild(this.labelElement);
+     
+        return this.containerElement;
+    }
+
+    destroy(): void {
+        if (this.inputElement && this.eventHandler) {
+            this.inputElement.removeEventListener('change', this.eventHandler);
+        }
+
+        this.containerElement?.remove();
+    }
+
+    addCallback(callback: (v: boolean) => void): void {
+        this.callbacks.push(callback);
     }
 }
 
@@ -146,9 +206,17 @@ export function addSlider(
 export function addButton(label: string, callback: () => void, category?: string): Button {
     const button = new Button(label);
     button.category = category;
-    button.eventHandler = callback;
+    button.addCallback(callback);
     uiComponents.push(button);
     return button;
+}
+
+export function addCheckbox(label: string, value: boolean, callback: (v: boolean) => void, category?: string): CheckBox {
+    const checkbox = new CheckBox(label, value);
+    checkbox.category = category;
+    checkbox.addCallback(callback);
+    uiComponents.push(checkbox);
+    return checkbox;
 }
 
 function injectUIComponent(component: UIComponent, container: HTMLDivElement) {

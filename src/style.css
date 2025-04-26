@@ -118,3 +118,21 @@ button {
 button:hover {
     background-color: rgb(28, 128, 200);
 }
+
+.checkbox {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1rem;
+    color: white;
+}
+
+.checkbox input[type=checkbox] {
+    margin-right: 0.5rem;
+    width: 1rem;
+    height: 1rem;
+    cursor: pointer;
+}
+
+.checkbox input[type=checkbox]:checked {
+    accent-color: rgb(38, 168, 255);
+}

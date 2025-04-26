@@ -12,6 +12,8 @@ uniform vec4 vCameraRotation;
 uniform vec3 vLightDirection;
 uniform float fBlendingFactor;
 uniform float fShadowSharpness;
+uniform bool bSky;
+
 varying vec2 vUv;
 
 float smin(float a, float b, float k) {
@@ -19,14 +21,40 @@ float smin(float a, float b, float k) {
     return mix(a, b, h) - k*h*(1.0-h);
 }
 
+bool isSphereVisible(int sphereIndex) {
+    return faSphereRadii[sphereIndex] > 0.01;
+}
+
+int firstVisibleSphere() {
+    for (int i = 0; i<MAX_SPHERES; i++) {
+        if (isSphereVisible(i)) {
+            return i;
+        }
+    }
+    return -1;
+}
+
 float sceneSDF(vec3 p) {    
+    int firstVisibleIndex = firstVisibleSphere();
+    if (firstVisibleIndex == -1) {
+        return 10000.0;
+    }
+
     float dists[MAX_SPHERES];
     for (int i = 0; i<MAX_SPHERES; i++) {
+        if (!isSphereVisible(i)) {
+            continue;
+        }
+
         dists[i] = length(p-vaSpherePositions[i])-faSphereRadii[i];
     }
 
-    float d = dists[0];
-    for (int i = 1;  i<MAX_SPHERES; i++) {
+    float d = dists[firstVisibleIndex];
+    for (int i = firstVisibleIndex + 1;  i<MAX_SPHERES; i++) {
+        if (!isSphereVisible(i)) {
+            continue;
+        }
+
         d = smin(d, dists[i], fBlendingFactor * 2.0);
     }
     return d;
@@ -51,6 +79,10 @@ vec3 getCol(vec3 p) {
     float dists[MAX_SPHERES];
 
     for (int i = 0; i<MAX_SPHERES; i++) {
+        if (!isSphereVisible(i)) {
+            continue;
+        }
+
         dists[i] = max(0.0,sphereSDF(p, i));
     }
 
@@ -58,6 +90,10 @@ vec3 getCol(vec3 p) {
     float distanceToClosestSphere;
 
     for (int i = 0; i<MAX_SPHERES; i++) {
+        if (!isSphereVisible(i)) {
+            continue;
+        }
+
         if (closestSphere == -1 || dists[i] < distanceToClosestSphere) {
             closestSphere = i;
             distanceToClosestSphere = dists[i];
@@ -67,6 +103,10 @@ vec3 getCol(vec3 p) {
     float t[MAX_SPHERES];
     float multiplier = 2.0;
     for (int i = 0; i<MAX_SPHERES; i++) {
+        if (!isSphereVisible(i)) {
+            continue;
+        }
+
         float distSum = distanceToClosestSphere + dists[i];
 
         if (distSum < 0.01) {
@@ -80,6 +120,10 @@ vec3 getCol(vec3 p) {
 
     vec3 col = vec3(0.0);
     for (int i = 0; i<MAX_SPHERES; i++) {
+        if (!isSphereVisible(i)) {
+            continue;
+        }
+
         col += vaSphereColors[i] * t[i] * multiplier;
     }
 
@@ -143,13 +187,15 @@ vec4 mainImage(vec2 fragUV)
         float specular = pow(max(0.0, dot(lightReflection, viewDir)), 32.0) * shadow;
 
         return vec4(getCol(p) * (diffuse + 0.1) + vec3(specular * 0.5), 1.0);
-    } else {
+    } else if (bSky) {
         float skyLight = 0.5 * (0.5 * (rayDir.y * 0.5 + 0.5));
         float alignment = dot(rayDir, -vLightDirection);
         float sunLight = alignment > 0.05 ? pow(max(0.0, alignment), fShadowSharpness * 128.0) : 0.0;
         vec3 col = vec3(0.2, 0.6, 1.0) * skyLight + vec3(1.0, 0.9, 0.8) * sunLight;
 
         return vec4(col, 1.0);
+    } else {
+        return vec4(0.0, 0.0, 0.0, 1.0);
     }
 }
 
