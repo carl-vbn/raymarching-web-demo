@@ -6,7 +6,7 @@ import vertexShader from './shaders/vertex.glsl?raw';
 import fragmentShader from './shaders/fragment.glsl?raw';
 import { EffectComposer, RenderPass, ShaderPass } from 'three/examples/jsm/Addons.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { addButton, addCheckbox, addSlider, injectUI } from './ui';
+import { addCheckbox, addSlider, injectUI } from './ui';
 
 const canvasContainer = document.getElementById('app')!;
 let viewportWidth = canvasContainer.getBoundingClientRect().width;
@@ -37,6 +37,8 @@ function getLightDirection() {
 const userParameters = [
   { uniform: 'fBlendingFactor', display: 'Blending', default: 0.5, category: '1#Scene' },
   { uniform: 'fShadowSharpness', display: 'Shadow Sharpness', default: 0.25, category: '1#Scene' },
+  { uniform: 'bSky', display: 'Draw Sky', default: true, category: '2#Performance' },
+  { uniform: 'bSpecular', display: 'Specular Highlight', default: true, category: '2#Performance' },
 ];
 
 const vaSphereColors = [
@@ -55,7 +57,6 @@ function getHoveredColor(index: number) {
   return color;
 }
 
-let fTime = 0;
 let paused = false;
 
 const geometry = new THREE.SphereGeometry(1);
@@ -81,7 +82,6 @@ composer.addPass(new RenderPass(scene, camera));
 const raymarchingPass = new ShaderPass({
   uniforms: {
     tDiffuse: { value: null },
-    fTime: { value: fTime },
     vResolution: { value: new THREE.Vector2(viewportWidth, window.innerHeight) },
     vaSpherePositions: { value: spheres.map(sphere => sphere.position) },
     vaSphereColors: { value: spheres.map(sphere => sphere.material.color) },
@@ -105,13 +105,6 @@ camera.position.z = 5;
 // Animation loop
 function animate() {
   requestAnimationFrame(animate);
-
-  const dt = 0.02;
-  
-  if (!paused) {
-    fTime += dt;
-    raymarchingPass.uniforms.fTime.value = fTime;  
-  }
 
   raymarchingPass.uniforms.vaSpherePositions.value = spheres.map(sphere => sphere.position);
 
@@ -218,9 +211,15 @@ window.addEventListener('keydown', (event) => {
 });
 
 for (const param of userParameters) {
-  addSlider(param.display, { default: param.default }, (v) => {
-    raymarchingPass.uniforms[param.uniform].value = v;
-  }, param.category);
+  if (param.uniform.charAt(0) === 'f') {
+    addSlider(param.display, { default: param.default as number }, (v) => {
+      raymarchingPass.uniforms[param.uniform].value = v;
+    }, param.category);
+  } else if (param.uniform.charAt(0) === 'b') {
+    addCheckbox(param.display, param.default as boolean, (v) => {
+      raymarchingPass.uniforms[param.uniform].value = v;
+    }, param.category);
+  }
 }
 
 addSlider('Sun Azimuth', { default: lightAzimuth, max: 2 * Math.PI, displayMax: 360 }, (v) => {
@@ -231,41 +230,18 @@ addSlider('Sun Elevation', { default: lightElevation, min: Math.PI / 2, max: -Ma
   lightElevation = v;
   raymarchingPass.uniforms.vLightDirection.value = getLightDirection();
 }, '1#Scene');
-addCheckbox('Draw Sky', true, (v: boolean) => {
-  raymarchingPass.uniforms.bSky.value = v;
-}, '1#Scene');
 
 for (let i = 0; i < spheres.length; i++) {
   const controls = [
-    addSlider(`Sphere ${i+1} Radius`, { default: spheres[i].geometry.parameters.radius, min: 0, max: 5 }, (v) => {
+    addSlider(`Sphere ${i+2} Radius`, { default: spheres[i].geometry.parameters.radius, min: 0, max: 5 }, (v) => {
       spheres[i].geometry.dispose();
       spheres[i].geometry = new THREE.SphereGeometry(v);
       raymarchingPass.uniforms.faSphereRadii.value[i] = v;
-    }, `${i+2}#Sphere ${i+1}`),
-    addButton(`Remove sphere ${i+1}`, () => {
-      const sphere = spheres[i];
-      scene.remove(sphere);
-      spheres.splice(i, 1);
-      console.log('Removed sphere', i);
-    }, `${i+2}#Sphere ${i+1}`)
+    }, `${i+2}#Sphere ${i+2}`),
   ];
 
   sphereControls.push(controls);
 }
-
-addButton('Add sphere', () => {
-  vaSphereColors.push(new THREE.Color(Math.random() * 0xffffff));
-  const newSphere = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ color: vaSphereColors[vaSphereColors.length - 1], wireframe: true }));
-  newSphere.visible = false;
-  newSphere.userData.index = spheres.length;
-  scene.add(newSphere);
-  spheres.push(newSphere);
-
-  // Update uniforms
-  raymarchingPass.uniforms.vaSpherePositions.value = spheres.map(sphere => sphere.position);
-  raymarchingPass.uniforms.vaSphereColors.value = spheres.map(sphere => sphere.material.color);
-  raymarchingPass.uniforms.faSphereRadii.value = spheres.map(sphere => sphere.geometry.parameters.radius);
-}, "10#Spheres");
 
 injectUI();
 

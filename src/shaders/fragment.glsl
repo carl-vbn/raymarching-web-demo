@@ -2,7 +2,6 @@ const int MAX_SPHERES = 3;
 const int MAX_STEPS = 100;
 
 uniform sampler2D tDiffuse;
-uniform float fTime;
 uniform vec2 vResolution;
 uniform vec3 vaSpherePositions[MAX_SPHERES];
 uniform vec3 vaSphereColors[MAX_SPHERES];
@@ -13,6 +12,7 @@ uniform vec3 vLightDirection;
 uniform float fBlendingFactor;
 uniform float fShadowSharpness;
 uniform bool bSky;
+uniform bool bSpecular;
 
 varying vec2 vUv;
 
@@ -173,18 +173,17 @@ vec4 mainImage(vec2 fragUV)
     vec3 p;
 
     if (raymarch(vCameraPosition, rayDir, p)) {
-        // Compute shadows
-        // vec3 shadowP;
-        // bool inShadow = raymarch(p - vLightDirection * 0.01, -vLightDirection, shadowP);
-
         float shadow = computeShadowRes(p, -vLightDirection, fShadowSharpness * 64.0);
         float diffuse = max(0.0, dot(getNormal(p), -vLightDirection)) * shadow;
         diffuse *= diffuse;
 
         // Compute specular highlight
-        vec3 lightReflection = normalize(reflect(vLightDirection, getNormal(p)));
-        vec3 viewDir = normalize(vCameraPosition - p);
-        float specular = pow(max(0.0, dot(lightReflection, viewDir)), 32.0) * shadow;
+        float specular = 0.0;
+        if (bSpecular) {
+            vec3 lightReflection = normalize(reflect(vLightDirection, getNormal(p)));
+            vec3 viewDir = normalize(vCameraPosition - p);
+            specular = pow(max(0.0, dot(lightReflection, viewDir)), 32.0) * shadow;
+        }
 
         return vec4(getCol(p) * (diffuse + 0.1) + vec3(specular * 0.5), 1.0);
     } else if (bSky) {
