@@ -13,6 +13,7 @@ uniform float fBlendingFactor;
 uniform float fShadowSharpness;
 uniform bool bSky;
 uniform bool bSpecular;
+uniform bool bShadows;
 
 varying vec2 vUv;
 
@@ -173,7 +174,7 @@ vec4 mainImage(vec2 fragUV)
     vec3 p;
 
     if (raymarch(vCameraPosition, rayDir, p)) {
-        float shadow = computeShadowRes(p, -vLightDirection, fShadowSharpness * 64.0);
+        float shadow = bShadows ? computeShadowRes(p, -vLightDirection, fShadowSharpness * 64.0) : 1.0;
         float diffuse = max(0.0, dot(getNormal(p), -vLightDirection)) * shadow;
         diffuse *= diffuse;
 

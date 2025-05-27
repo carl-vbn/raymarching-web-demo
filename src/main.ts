@@ -39,6 +39,7 @@ const userParameters = [
   { uniform: 'fShadowSharpness', display: 'Shadow Sharpness', default: 0.25, category: '1#Scene' },
   { uniform: 'bSky', display: 'Draw Sky', default: true, category: '2#Performance' },
   { uniform: 'bSpecular', display: 'Specular Highlight', default: true, category: '2#Performance' },
+  { uniform: 'bShadows', display: 'Shadows', default: true, category: '2#Performance' }
 ];
 
 const vaSphereColors = [
