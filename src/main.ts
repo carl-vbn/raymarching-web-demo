@@ -6,7 +6,7 @@ import vertexShader from './shaders/vertex.glsl?raw';
 import fragmentShader from './shaders/fragment.glsl?raw';
 import { EffectComposer, RenderPass, ShaderPass } from 'three/examples/jsm/Addons.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { addCheckbox, addSlider, injectUI } from './ui';
+import { addCheckbox, addColorPicker, addSlider, injectUI } from './ui';
 
 const canvasContainer = document.getElementById('app')!;
 let viewportWidth = canvasContainer.getBoundingClientRect().width;
@@ -35,7 +35,7 @@ function getLightDirection() {
 }
 
 const userParameters = [
-  { uniform: 'fBlendingFactor', display: 'Blending', default: 0.5, category: '1#Scene' },
+  { uniform: 'fBlendingFactor', display: 'Blending', default: 0.3, category: '1#Scene' },
   { uniform: 'fShadowSharpness', display: 'Shadow Sharpness', default: 0.25, category: '1#Scene' },
   { uniform: 'bSky', display: 'Draw Sky', default: true, category: '2#Performance' },
   { uniform: 'bSpecular', display: 'Specular Highlight', default: true, category: '2#Performance' },
@@ -74,6 +74,11 @@ let isHoveringSphere = false;
 spheres.forEach(sphere => scene.add(sphere));
 spheres.forEach(sphere => sphere.visible = false);
 spheres.forEach((sphere, index) => sphere.userData.index = index);
+
+// Initial positions
+spheres[0].position.set(-1, 0, 0);
+spheres[1].position.set(0, 1.7, 0);
+spheres[2].position.set(1, 0, 0);
 
 // Shader
 const MAX_SPHERES = 3;
@@ -233,10 +238,13 @@ addSlider('Sun Elevation', { default: lightElevation, min: Math.PI / 2, max: -Ma
 
 for (let i = 0; i < spheres.length; i++) {
   const controls = [
-    addSlider(`Sphere ${i+2} Radius`, { default: spheres[i].geometry.parameters.radius, min: 0, max: 5 }, (v) => {
+    addSlider(`Radius`, { default: spheres[i].geometry.parameters.radius, min: 0, max: 5 }, (v) => {
       spheres[i].geometry.dispose();
       spheres[i].geometry = new THREE.SphereGeometry(v);
       raymarchingPass.uniforms.faSphereRadii.value[i] = v;
+    }, `${i+2}#Sphere ${i+2}`),
+    addColorPicker(`Color`, `#${vaSphereColors[i].getHexString()}`, (color) => {
+      vaSphereColors[i].set(new THREE.Color(color));
     }, `${i+2}#Sphere ${i+2}`),
   ];
 

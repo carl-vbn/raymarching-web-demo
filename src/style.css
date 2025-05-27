@@ -136,3 +136,44 @@ button:hover {
 .checkbox input[type=checkbox]:checked {
     accent-color: rgb(38, 168, 255);
 }
+
+.color-picker {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+.color-picker input[type=color] {
+    width: 2rem;
+    height: 2rem;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    margin-right: 0.5rem;
+}
+.color-picker input[type=color]::-webkit-color-swatch-wrapper {
+    padding: 0;
+}
+.color-picker input[type=color]::-webkit-color-swatch {
+    border: none;
+    border-radius: 50%;
+}
+.color-picker label {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.8rem;
+}
+.color-picker input[type=color]:focus {
+    outline: none;
+}
+.color-picker input[type=color]:hover {
+    box-shadow: 0 0 5px rgba(38, 168, 255, 0.5);
+}
+.color-picker input[type=color]:active {
+    box-shadow: 0 0 10px rgba(38, 168, 255, 0.7);
+}
+.color-picker input[type=color]::-moz-color-swatch {
+    border: none;
+    border-radius: 50%;
+}
+.color-picker input[type=color]::-moz-color-swatch-wrapper {
+    padding: 0;
+}

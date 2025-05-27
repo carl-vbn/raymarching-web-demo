@@ -179,6 +179,60 @@ export class CheckBox implements UIComponent {
     }
 }
 
+export class ColorPicker implements UIComponent {
+    label: string;
+    value: string; // Hex color
+    category?: string;
+    inputElement?: HTMLInputElement;
+    containerElement?: HTMLDivElement;
+    eventHandler?: () => void;
+
+    callbacks: ((v: string) => void)[] = [];
+
+    constructor(label: string, value: string) {
+        this.label = label;
+        this.value = value;
+    }
+
+    build(): HTMLDivElement {
+        this.containerElement = document.createElement('div');
+        this.containerElement.classList.add('color-picker');
+
+        const label = document.createElement('label');
+        label.innerText = this.label;
+
+        this.inputElement = document.createElement('input');
+        this.inputElement.type = 'color';
+        this.inputElement.value = this.value;
+
+        this.eventHandler = () => {
+            if (!this.inputElement) return;
+
+            this.value = this.inputElement.value;
+            this.callbacks.forEach(callback => callback(this.value));
+        };
+
+        this.inputElement.addEventListener('input', this.eventHandler);
+
+        this.containerElement.appendChild(this.inputElement);
+        this.containerElement.appendChild(label);
+
+        return this.containerElement;
+    }
+
+    destroy(): void {
+        if (this.inputElement && this.eventHandler) {
+            this.inputElement.removeEventListener('input', this.eventHandler);
+        }
+
+        this.containerElement?.remove();
+    }
+
+    addCallback(callback: (v: string) => void): void {
+        this.callbacks.push(callback);
+    }
+}
+
 function inverseLerp(a: number, b: number, v: number): number {
     return (v - a) / (b - a);
 }
@@ -217,6 +271,14 @@ export function addCheckbox(label: string, value: boolean, callback: (v: boolean
     checkbox.addCallback(callback);
     uiComponents.push(checkbox);
     return checkbox;
+}
+
+export function addColorPicker(label: string, value: string, callback: (v: string) => void, category?: string): ColorPicker {
+    const colorPicker = new ColorPicker(label, value);
+    colorPicker.category = category;
+    colorPicker.addCallback(callback);
+    uiComponents.push(colorPicker);
+    return colorPicker;
 }
 
 function injectUIComponent(component: UIComponent, container: HTMLDivElement) {
